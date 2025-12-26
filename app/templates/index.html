@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScholarGraph AI - Domain Aware Retrieval</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    {% if not results %}
+    <!-- HOME PAGE LAYOUT -->
+    <div class="home-container fade-in">
+        <div class="home-logo">
+            <i class="fas fa-project-diagram" style="color: #1a0dab; margin-right: 10px;"></i>Scholar<span>Graph</span> AI
+        </div>
+        <div class="home-search">
+            <form action="/search" method="get" style="position: relative;">
+                <i class="fas fa-search search-icon-home"></i>
+                <input type="text" name="q" class="search-input home-input" placeholder="Search for research papers (e.g., 'RL for robotics')..." required autofocus>
+            </form>
+        </div>
+        <div style="margin-top: 20px; color: #666; font-size: 14px;">
+            <i class="fas fa-network-wired"></i> Graph-Optimized Master Routing for Domain-Aware Scholarly AI Retrieval
+        </div>
+    </div>
+
+    {% else %}
+    <!-- RESULTS PAGE LAYOUT -->
+    <header class="header fade-in-down">
+        <a href="/" class="logo"><i class="fas fa-project-diagram" style="color: #1a0dab; margin-right: 10px;"></i>Scholar<span>Graph</span></a>
+        <form action="/search" method="get" class="search-form">
+            <input type="text" name="q" class="search-input" value="{{ query }}" required>
+            <button type="submit" class="search-btn"><i class="fas fa-search"></i></button>
+        </form>
+    </header>
+
+    <div class="container fade-in">
+        <!-- Left Column: Results (Scrollable) -->
+        <div class="results-col">
+            <div style="margin-bottom: 20px; color: #70757a; font-size: 14px;">
+                Found {{ results|length }} results in {{ latency }} seconds
+            </div>
+
+            {% if not results %}
+                <p>No results found. Try a different query.</p>
+            {% endif %}
+
+            {% for paper in results %}
+            <div class="result-item">
+                <div class="result-header">
+                    <a href="{{ paper.doi if paper.doi else paper.url }}" target="_blank" class="result-title">{{ paper.title }}</a>
+                </div>
+
+                <div class="result-meta">
+                    <span class="meta-source">{{ paper.display_collection }}</span>
+                    <span class="meta-divider">•</span>
+                    <span class="meta-authors">
+                        {% if paper.authors %}
+                            {{ paper.authors[0].name }}{% if paper.authors|length > 1 %} et al.{% endif %}
+                        {% else %}
+                            Unknown Author
+                        {% endif %}
+                    </span>
+                    <span class="meta-divider">•</span>
+                    <span class="meta-venue">{{ paper.venue or 'Preprint' }}</span>
+                    <span class="meta-divider">•</span>
+                    <span class="meta-year">{{ paper.year }}</span>
+                </div>
+
+                {% if paper.abstract %}
+                <div class="result-abstract">
+                    {{ paper.abstract[:300] }}{% if paper.abstract|length > 300 %}...{% endif %}
+                </div>
+                {% endif %}
+
+                <div class="result-footer">
+                    <div class="result-actions">
+                        <a href="/analysis/{{ paper.collection }}/{{ paper.id }}" class="action-btn analyze-btn">
+                            <i class="fas fa-magic"></i> AI Analysis
+                        </a>
+                        <a href="#" class="action-link">Cite ({{ paper.citations }})</a>
+                        {% if paper.doi %}
+                        <a href="{{ paper.doi }}" target="_blank" class="action-link">Source</a>
+                        {% endif %}
+                    </div>
+                    {% if paper.is_oa %}
+                    <div class="oa-badge"><i class="fas fa-lock-open"></i> Open Access</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Pagination -->
+            <div class="pagination" style="margin-top: 30px; display: flex; justify-content: center; gap: 10px;">
+                {% if page > 1 %}
+                    <a href="/search?q={{ query }}&page={{ page - 1 }}" class="pagination-btn">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </a>
+                {% endif %}
+                
+                <span style="padding: 8px 12px; color: #5f6368;">Page {{ page }}</span>
+
+                {% if has_next %}
+                    <a href="/search?q={{ query }}&page={{ page + 1 }}" class="pagination-btn">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right Column: Routing Stats (Fixed) -->
+        <div class="stats-col">
+            <div class="stats-box">
+                <h4><i class="fas fa-project-diagram"></i> Routing Intelligence</h4>
+                
+                <div class="stats-summary">
+                    <div class="stat-metric">
+                        <span class="metric-label">Latency</span>
+                        <span class="metric-value">{{ latency }}s</span>
+                    </div>
+                    <div class="stat-metric">
+                        <span class="metric-label">Top Domain</span>
+                        <span class="metric-value">{{ routed_to[0].display_name if routed_to else 'N/A' }}</span>
+                    </div>
+                    <div class="stat-metric">
+                        <span class="metric-label">Confidence</span>
+                        <span class="metric-value" style="color: #137333;">High</span>
+                    </div>
+                </div>
+
+                <p class="stats-desc">
+                    The <strong>Master Router</strong> analyzed your query using semantic similarity and graph weights to select the optimal knowledge domains.
+                </p>
+                
+                <div class="routes-list">
+                    {% for route in routed_to %}
+                    <div class="route-item">
+                        <div class="route-header">
+                            <span class="route-name">{{ route.display_name }}</span>
+                            <span class="route-weight">Weight: {{ "%.2f"|format(route.graph_w) }}</span>
+                        </div>
+                        <div class="weight-bar-bg">
+                            <div class="weight-bar-fill" style="width: {{ (route.graph_w / 5 * 100) if route.graph_w < 5 else 100 }}%;"></div>
+                        </div>
+                        <div class="route-details">
+                            <span><i class="fas fa-bullseye"></i> Score: {{ "%.3f"|format(route.score) }}</span>
+                            <span><i class="fas fa-network-wired"></i> Active Nodes</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="graph-status">
+                    <i class="fas fa-check-circle"></i> Knowledge Graph Active
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div style="font-size: 18px; color: #555;">Searching Knowledge Graph...</div>
+    </div>
+
+    <script>
+        // Show loading overlay when forms are submitted
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function() {
+                document.getElementById('loadingOverlay').style.display = 'flex';
+            });
+        });
+
+        // --- Search Suggestions & Routing Preview ---
+        const searchInputs = document.querySelectorAll('.search-input');
+        
+        searchInputs.forEach(input => {
+            // Create suggestion box
+            const suggestionBox = document.createElement('div');
+            suggestionBox.className = 'suggestion-box';
+            suggestionBox.style.display = 'none';
+            input.parentNode.appendChild(suggestionBox);
+
+            let timeout = null;
+
+            input.addEventListener('input', function() {
+                const query = this.value;
+                
+                if (query.length < 2) {
+                    suggestionBox.style.display = 'none';
+                    return;
+                }
+
+                // Debounce
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    fetch(`/suggest?q=${encodeURIComponent(query)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (!data) return;
+
+                            let html = '';
+                            
+                            // 1. Routing Prediction
+                            html += `
+                                <div class="suggestion-header">
+                                    <i class="fas fa-bolt" style="color: #fbbc04;"></i> 
+                                    Routing to: <strong>${data.predicted_domain}</strong>
+                                    <span style="font-size: 11px; color: #006621; margin-left: 5px;">(Weight: ${data.graph_weight.toFixed(2)})</span>
+                                </div>
+                            `;
+
+                            // 2. Keyword Completions
+                            if (data.completions.length > 0) {
+                                data.completions.forEach(term => {
+                                    html += `<div class="suggestion-item" onclick="selectSuggestion('${term}')"><i class="fas fa-search" style="color: #9aa0a6; margin-right: 10px; font-size: 12px;"></i> ${term}</div>`;
+                                });
+                            }
+
+                            suggestionBox.innerHTML = html;
+                            suggestionBox.style.display = 'block';
+                        });
+                }, 300);
+            });
+
+            // Hide on blur (delayed to allow click)
+            input.addEventListener('blur', () => {
+                setTimeout(() => {
+                    suggestionBox.style.display = 'none';
+                }, 200);
+            });
+        });
+
+        function selectSuggestion(term) {
+            const inputs = document.querySelectorAll('.search-input');
+            inputs.forEach(i => i.value = term);
+            document.querySelector('form').submit();
+        }
+    </script>
+
+</body>
+</html>

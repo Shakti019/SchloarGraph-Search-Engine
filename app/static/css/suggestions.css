@@ -1,0 +1,40 @@
+
+/* --- Search Suggestions --- */
+.suggestion-box {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: #fff;
+    border: 1px solid #dfe1e5;
+    border-top: none;
+    border-radius: 0 0 24px 24px;
+    box-shadow: 0 4px 6px rgba(32,33,36,0.28);
+    z-index: 200;
+    overflow: hidden;
+    padding-bottom: 8px;
+}
+
+.suggestion-header {
+    padding: 10px 20px;
+    font-size: 13px;
+    color: #5f6368;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+
+.suggestion-item {
+    padding: 8px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    color: #202124;
+}
+
+.suggestion-item:hover {
+    background-color: #eee;
+}
+
+/* Adjust search input when suggestions are open */
+.search-input:focus + .suggestion-box {
+    display: block;
+}
