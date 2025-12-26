@@ -5,39 +5,80 @@ from app.core.config import settings
 from app.core.graph import graph_db
 import time
 
-# Initialize Qdrant Client
-client = QdrantClient(
-    url=settings.QDRANT_URL,
-    api_key=settings.QDRANT_API_KEY,
-    timeout=60
-)
+# Global variables for lazy loading
+client = None
+model = None
+collection_vectors = None
+collection_names = None
 
-# Initialize Embedding Model (Lazy loading recommended for production, but fine here)
-print("Loading Embedding Model...")
-model = SentenceTransformer(settings.EMBEDDING_MODEL)
-print("Model Loaded.")
+def get_client():
+    global client
+    if client is None:
+        if not settings.QDRANT_URL:
+            print("Warning: QDRANT_URL not set. Search will fail.")
+            return None
+        try:
+            client = QdrantClient(
+                url=settings.QDRANT_URL,
+                api_key=settings.QDRANT_API_KEY,
+                timeout=60
+            )
+        except Exception as e:
+            print(f"Failed to initialize Qdrant client: {e}")
+            return None
+    return client
 
-# Pre-compute collection embeddings for routing
-collection_names = list(settings.COLLECTIONS.keys())
-collection_descriptions = list(settings.COLLECTIONS.values())
-collection_vectors = model.encode(collection_descriptions, normalize_embeddings=True)
+def get_model():
+    global model
+    if model is None:
+        print("Loading Embedding Model...")
+        try:
+            model = SentenceTransformer(settings.EMBEDDING_MODEL)
+            print("Model Loaded.")
+        except Exception as e:
+            print(f"Failed to load embedding model: {e}")
+            return None
+    return model
+
+def get_collection_data():
+    global collection_vectors, collection_names
+    if collection_vectors is None:
+        m = get_model()
+        if m:
+            collection_names = list(settings.COLLECTIONS.keys())
+            collection_descriptions = list(settings.COLLECTIONS.values())
+            collection_vectors = m.encode(collection_descriptions, normalize_embeddings=True)
+        else:
+            return [], []
+    return collection_vectors, collection_names
 
 def get_embedding(text: str):
-    return model.encode(text, normalize_embeddings=True).tolist()
+    m = get_model()
+    if not m:
+        return []
+    return m.encode(text, normalize_embeddings=True).tolist()
 
 def master_router(query: str, top_k: int = 3):
     """
     Stage 1: Semantic Routing
     Finds the most relevant collections based on vector similarity.
     """
-    query_vector = model.encode(query, normalize_embeddings=True)
+    m = get_model()
+    if not m:
+        return []
+        
+    query_vector = m.encode(query, normalize_embeddings=True)
     
+    vectors, names = get_collection_data()
+    if not vectors is not None and len(vectors) > 0:
+         return []
+
     # Compute cosine similarity
-    scores = np.dot(collection_vectors, query_vector)
+    scores = np.dot(vectors, query_vector)
     
     # Pair with names
     ranked_collections = []
-    for name, score in zip(collection_names, scores):
+    for name, score in zip(names, scores):
         ranked_collections.append({"name": name, "semantic_score": float(score)})
         
     # Sort by score
@@ -91,11 +132,15 @@ def graph_optimized_search(query: str, page: int = 1, limit: int = 15):
     query_vector = get_embedding(query)
     all_results = []
     
+    c = get_client()
+    if not c:
+        return {"results": [], "latency": 0, "routed_to": []}
+
     for route in selected_collections:
         col_name = route["name"]
         display_name = route["display_name"]
         try:
-            hits = client.query_points(
+            hits = c.query_points(
                 collection_name=col_name,
                 query=query_vector,
                 limit=per_collection_limit,
@@ -175,6 +220,10 @@ def get_paper_details(collection_name: str, paper_id: str):
     """
     Fetches a single paper's details from Qdrant by ID.
     """
+    c = get_client()
+    if not c:
+        return None
+
     try:
         # Try to convert ID to integer if it looks like one
         # Qdrant requires integer IDs to be passed as integers, not strings
@@ -184,7 +233,7 @@ def get_paper_details(collection_name: str, paper_id: str):
             qdrant_id = paper_id
 
         # Qdrant retrieve API
-        points = client.retrieve(
+        points = c.retrieve(
             collection_name=collection_name,
             ids=[qdrant_id],
             with_payload=True
