@@ -34,7 +34,8 @@ def get_model():
     if model is None:
         print("Loading Embedding Model...")
         try:
-            model = SentenceTransformer(settings.EMBEDDING_MODEL)
+            # Force CPU device to avoid "meta tensor" errors on some environments
+            model = SentenceTransformer(settings.EMBEDDING_MODEL, device='cpu')
             print("Model Loaded.")
         except Exception as e:
             print(f"Failed to load embedding model: {e}")
@@ -234,8 +235,13 @@ def get_suggestions(query: str):
             
     # 2. Routing Prediction (Fast Semantic Check)
     # We use a smaller top_k=1 just to see where it would go
-    predicted_route = master_router(query, top_k=1)[0]
-    col_name = predicted_route["name"]
+    routes = master_router(query, top_k=1)
+    if routes:
+        predicted_route = routes[0]
+        col_name = predicted_route["name"]
+    else:
+        # Fallback if model fails or no routes found
+        col_name = "cs_ai_full"
     
     return {
         "completions": suggestions[:3],
