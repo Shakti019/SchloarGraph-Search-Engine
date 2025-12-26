@@ -22,7 +22,7 @@ async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/suggest")
-async def suggest(q: str = Query(..., min_length=1)):
+def suggest(q: str = Query(..., min_length=1)):
     data = get_suggestions(q)
     return JSONResponse(content=data)
 

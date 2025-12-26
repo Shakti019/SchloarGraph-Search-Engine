@@ -30,7 +30,7 @@ async def analyze_paper_content(title: str, abstract: str):
     """
     
     try:
-        response = model.generate_content(prompt)
+        response = await model.generate_content_async(prompt)
         return response.text
     except Exception as e:
         return f"Error generating analysis: {str(e)}"
@@ -60,7 +60,7 @@ async def chat_with_paper_context(history: list, message: str, context: str):
     full_prompt = f"{system_prompt}\n\nUser: {message}"
     
     try:
-        response = chat.send_message(full_prompt)
+        response = await chat.send_message_async(full_prompt)
         return response.text
     except Exception as e:
         return f"Error in chat: {str(e)}"
@@ -73,7 +73,7 @@ async def expand_query(query: str) -> str:
     prompt = f"You are a search optimization assistant. Refine and expand the following search query to improve retrieval of academic papers. Return ONLY the optimized query string, no explanations. Original Query: {query}"
     
     try:
-        response = model.generate_content(prompt)
+        response = await model.generate_content_async(prompt)
         return response.text.strip()
     except Exception as e:
         print(f"Query expansion failed: {e}")

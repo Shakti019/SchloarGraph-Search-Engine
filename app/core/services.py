@@ -59,16 +59,16 @@ def get_embedding(text: str):
         return []
     return m.encode(text, normalize_embeddings=True).tolist()
 
-def master_router(query: str, top_k: int = 3):
+def master_router(query: str, top_k: int = 3, query_vector=None):
     """
     Stage 1: Semantic Routing
     Finds the most relevant collections based on vector similarity.
     """
-    m = get_model()
-    if not m:
-        return []
-        
-    query_vector = m.encode(query, normalize_embeddings=True)
+    if query_vector is None:
+        m = get_model()
+        if not m:
+            return []
+        query_vector = m.encode(query, normalize_embeddings=True)
     
     vectors, names = get_collection_data()
     if not vectors is not None and len(vectors) > 0:
@@ -87,6 +87,12 @@ def master_router(query: str, top_k: int = 3):
     
     return ranked_collections[:top_k]
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
+# Create a thread pool for blocking operations
+executor = ThreadPoolExecutor(max_workers=3)
+
 async def graph_optimized_search(query: str, page: int = 1, limit: int = 15):
     """
     Stage 2 & 3: Graph Re-ranking & Search
@@ -94,13 +100,18 @@ async def graph_optimized_search(query: str, page: int = 1, limit: int = 15):
     """
     start_time = time.time()
     
-    # 0. Query Expansion
+    # 0. Query Expansion (Async)
     expanded_query = await expand_query(query)
     
-    # 1. Get Semantic Candidates
-    candidates = master_router(expanded_query, top_k=4)
+    # 1. Generate Embedding ONCE (Blocking - Run in ThreadPool)
+    loop = asyncio.get_event_loop()
+    query_vector = await loop.run_in_executor(executor, get_embedding, expanded_query)
     
-    # 2. Apply Graph Weights (Re-ranking)
+    # 2. Get Semantic Candidates (Fast now, but keep in executor for safety)
+    # Pass the pre-computed vector to avoid re-encoding
+    candidates = await loop.run_in_executor(executor, master_router, expanded_query, 4, query_vector)
+    
+    # 3. Apply Graph Weights (Re-ranking)
     final_routes = []
     for item in candidates:
         col_name = item["name"]
@@ -132,37 +143,35 @@ async def graph_optimized_search(query: str, page: int = 1, limit: int = 15):
     per_collection_limit = max(1, limit // num_collections)
     offset = (page - 1) * per_collection_limit
 
-    # 3. Perform Vector Search in Selected Collections
-    query_vector = get_embedding(expanded_query)
+    # 4. Perform Vector Search in Selected Collections (Parallel)
     all_results = []
-    
     c = get_client()
     if not c:
         return {"results": [], "latency": 0, "routed_to": []}
 
-    for route in selected_collections:
+    def search_single_collection(route, vector, limit, offset):
         col_name = route["name"]
         display_name = route["display_name"]
+        results = []
         try:
             hits = c.query_points(
                 collection_name=col_name,
-                query=query_vector,
-                limit=per_collection_limit,
+                query=vector,
+                limit=limit,
                 offset=offset,
                 with_payload=True
             ).points
             
-            # If we found results, update the graph (Feedback Loop)
             if hits:
                 graph_db.update(col_name, reward=0.5)
-            
+                
             for hit in hits:
                 payload = hit.payload
-                all_results.append({
+                results.append({
                     "id": hit.id,
-                    "score": hit.score, # Vector similarity
-                    "collection": col_name, # Raw collection name for API calls
-                    "display_collection": display_name, # Pretty name for UI
+                    "score": hit.score,
+                    "collection": col_name,
+                    "display_collection": display_name,
                     "title": payload.get("title", "No Title"),
                     "abstract": payload.get("abstract", ""),
                     "year": payload.get("publication_year", "N/A"),
@@ -173,13 +182,27 @@ async def graph_optimized_search(query: str, page: int = 1, limit: int = 15):
                     "doi": payload.get("doi", ""),
                     "is_oa": payload.get("is_open_access", False),
                     "authors": payload.get("authors", []),
-                    "concepts": payload.get("concepts", [])[:5] # Top 5 concepts
+                    "concepts": payload.get("concepts", [])[:5]
                 })
-                
         except Exception as e:
             print(f"Error searching collection {col_name}: {e}")
+        return results
+
+    # Create tasks for parallel execution
+    search_tasks = []
+    for route in selected_collections:
+        search_tasks.append(
+            loop.run_in_executor(executor, search_single_collection, route, query_vector, per_collection_limit, offset)
+        )
+    
+    # Wait for all searches to complete
+    results_lists = await asyncio.gather(*search_tasks)
+    
+    # Flatten results
+    for r_list in results_lists:
+        all_results.extend(r_list)
             
-    # 4. Final Merge & Sort
+    # 5. Final Merge & Sort
     # Sort all results by their vector score
     all_results.sort(key=lambda x: x["score"], reverse=True)
     
