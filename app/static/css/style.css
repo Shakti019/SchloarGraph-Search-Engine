@@ -235,12 +235,85 @@ body {
 @media (max-width: 900px) {
     .container {
         flex-direction: column-reverse; /* Put stats below results on mobile */
+        padding: 20px;
+        gap: 20px;
     }
     
     .stats-col {
         width: 100%;
         position: static; /* Unstick on mobile */
-        margin-top: 30px;
+        margin-top: 0;
+        margin-bottom: 20px;
+    }
+
+    /* Skeleton Responsive */
+    .skeleton-container {
+        flex-direction: column-reverse;
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .skeleton-stats-col {
+        width: 100%;
+    }
+}
+
+@media (max-width: 600px) {
+    .header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 15px;
+        gap: 15px;
+    }
+
+    .logo {
+        margin-right: 0;
+        text-align: center;
+        margin-bottom: 0;
+    }
+
+    .search-form {
+        max-width: 100%;
+        margin-left: 0;
+    }
+
+    .search-btn {
+        margin-left: -40px;
+    }
+
+    .home-logo {
+        font-size: 40px;
+    }
+    
+    .home-container {
+        padding: 20px;
+        height: auto;
+        min-height: 80vh;
+    }
+
+    .result-actions {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    /* Skeleton Mobile */
+    .skeleton-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 15px;
+        gap: 15px;
+    }
+
+    .skeleton-logo {
+        margin-right: 0;
+        margin-bottom: 0;
+        width: 120px;
+        align-self: center;
+    }
+    
+    .skeleton-search-bar {
+        width: 100%;
+        max-width: none;
     }
 }
 
