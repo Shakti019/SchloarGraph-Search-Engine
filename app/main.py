@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from app.core.services import graph_optimized_search, get_suggestions, get_paper_details
 from app.core.gemini_service import analyze_paper_content, chat_with_paper_context
 from app.core.config import settings
+from app.core.graph import graph_db
 import uvicorn
 import markdown
 
@@ -28,7 +29,7 @@ async def suggest(q: str = Query(..., min_length=1)):
 @app.get("/search", response_class=HTMLResponse)
 async def search(request: Request, q: str = Query(..., min_length=3), page: int = Query(1, ge=1)):
     # Perform the graph-optimized search
-    search_data = graph_optimized_search(q, page=page, limit=15)
+    search_data = await graph_optimized_search(q, page=page, limit=15)
     
     return templates.TemplateResponse("index.html", {
         "request": request,
@@ -76,6 +77,14 @@ async def chat(
 ):
     response = await chat_with_paper_context(history, message, context)
     return JSONResponse({"response": response})
+
+@app.post("/feedback")
+async def feedback(collection: str = Body(...), reward: float = Body(0.1)):
+    """
+    Updates the graph weights based on user interaction (e.g., clicking a result).
+    """
+    graph_db.update(collection, reward)
+    return JSONResponse({"status": "success", "new_weight": graph_db.get_weight(collection)})
 
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)

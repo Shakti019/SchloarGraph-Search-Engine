@@ -64,3 +64,18 @@ async def chat_with_paper_context(history: list, message: str, context: str):
         return response.text
     except Exception as e:
         return f"Error in chat: {str(e)}"
+
+async def expand_query(query: str) -> str:
+    """
+    Expands the search query with synonyms and related terms using Gemini.
+    """
+    model = get_gemini_model()
+    prompt = f"You are a search optimization assistant. Refine and expand the following search query to improve retrieval of academic papers. Return ONLY the optimized query string, no explanations. Original Query: {query}"
+    
+    try:
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        print(f"Query expansion failed: {e}")
+        return query
+

@@ -3,6 +3,7 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from app.core.config import settings
 from app.core.graph import graph_db
+from app.core.gemini_service import expand_query
 import time
 
 # Global variables for lazy loading
@@ -86,15 +87,18 @@ def master_router(query: str, top_k: int = 3):
     
     return ranked_collections[:top_k]
 
-def graph_optimized_search(query: str, page: int = 1, limit: int = 15):
+async def graph_optimized_search(query: str, page: int = 1, limit: int = 15):
     """
     Stage 2 & 3: Graph Re-ranking & Search
     Combines semantic score with graph weights and searches Qdrant.
     """
     start_time = time.time()
     
+    # 0. Query Expansion
+    expanded_query = await expand_query(query)
+    
     # 1. Get Semantic Candidates
-    candidates = master_router(query, top_k=4)
+    candidates = master_router(expanded_query, top_k=4)
     
     # 2. Apply Graph Weights (Re-ranking)
     final_routes = []
@@ -129,7 +133,7 @@ def graph_optimized_search(query: str, page: int = 1, limit: int = 15):
     offset = (page - 1) * per_collection_limit
 
     # 3. Perform Vector Search in Selected Collections
-    query_vector = get_embedding(query)
+    query_vector = get_embedding(expanded_query)
     all_results = []
     
     c = get_client()

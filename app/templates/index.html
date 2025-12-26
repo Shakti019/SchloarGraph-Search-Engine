@@ -48,7 +48,7 @@
             {% endif %}
 
             {% for paper in results %}
-            <div class="result-item">
+            <div class="result-item" data-collection="{{ paper.collection }}">
                 <div class="result-header">
                     <a href="{{ paper.doi if paper.doi else paper.url }}" target="_blank" class="result-title">{{ paper.title }}</a>
                 </div>
@@ -160,17 +160,45 @@
     </div>
     {% endif %}
 
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner"></div>
-        <div style="font-size: 18px; color: #555;">Searching Knowledge Graph...</div>
+    <!-- Skeleton Loading View -->
+    <div class="skeleton-view" id="skeletonView">
+        <div class="skeleton-header">
+            <div class="skeleton-logo"></div>
+            <div class="skeleton-search-bar"></div>
+        </div>
+        <div class="skeleton-container">
+            <div class="skeleton-results-col">
+                <!-- Repeat skeleton items -->
+                {% for i in range(5) %}
+                <div class="skeleton-result-item">
+                    <div class="skeleton-line sk-title"></div>
+                    <div class="skeleton-line sk-meta"></div>
+                    <div class="skeleton-line sk-text"></div>
+                    <div class="skeleton-line sk-text"></div>
+                    <div class="skeleton-line sk-text-short"></div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="skeleton-stats-col">
+                <div class="skeleton-line sk-box"></div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Show loading overlay when forms are submitted
+        // Show skeleton view when forms are submitted
         document.querySelectorAll('form').forEach(form => {
             form.addEventListener('submit', function() {
-                document.getElementById('loadingOverlay').style.display = 'flex';
+                document.getElementById('skeletonView').style.display = 'block';
+                // Hide main content if visible
+                const homeContainer = document.querySelector('.home-container');
+                if (homeContainer) homeContainer.style.display = 'none';
+                
+                const resultsContainer = document.querySelector('.container');
+                if (resultsContainer) resultsContainer.style.display = 'none';
+
+                const header = document.querySelector('.header');
+                if (header) header.style.display = 'none';
             });
         });
 
@@ -239,6 +267,26 @@
             inputs.forEach(i => i.value = term);
             document.querySelector('form').submit();
         }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.result-title, .analyze-btn').forEach(el => {
+                el.addEventListener('click', function(e) {
+                    const item = this.closest('.result-item');
+                    const collection = item.getAttribute('data-collection');
+                    if (collection) {
+                        fetch('/feedback', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ collection: collection, reward: 0.1 }),
+                        }).catch(console.error);
+                    }
+                });
+            });
+        });
     </script>
 
 </body>

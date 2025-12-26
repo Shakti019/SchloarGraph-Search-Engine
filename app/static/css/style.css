@@ -641,3 +641,103 @@ body {
 .markdown-body strong {
     font-weight: 600;
 }
+
+/* --- Skeleton Loading --- */
+.skeleton-view {
+    display: none; /* Hidden by default */
+    background-color: #fff;
+    min-height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 2000;
+}
+
+.skeleton-header {
+    padding: 20px 30px;
+    border-bottom: 1px solid #ebebeb;
+    display: flex;
+    align-items: center;
+    background: #fff;
+}
+
+.skeleton-logo {
+    width: 150px;
+    height: 30px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    margin-right: 40px;
+}
+
+.skeleton-search-bar {
+    flex-grow: 1;
+    max-width: 690px;
+    height: 44px;
+    background: #e0e0e0;
+    border-radius: 24px;
+}
+
+.skeleton-container {
+    display: flex;
+    padding: 30px;
+    max-width: 1300px;
+    margin: 0 auto;
+    gap: 40px;
+}
+
+.skeleton-results-col {
+    flex-grow: 1;
+}
+
+.skeleton-stats-col {
+    width: 340px;
+    flex-shrink: 0;
+}
+
+.skeleton-result-item {
+    margin-bottom: 30px;
+}
+
+.skeleton-line {
+    background: #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.skeleton-line::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0,
+        rgba(255, 255, 255, 0.4) 20%,
+        rgba(255, 255, 255, 0.7) 60%,
+        rgba(255, 255, 255, 0)
+    );
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.sk-title { height: 24px; width: 60%; margin-bottom: 12px; }
+.sk-meta { height: 16px; width: 40%; margin-bottom: 12px; }
+.sk-text { height: 14px; width: 100%; margin-bottom: 6px; }
+.sk-text-short { height: 14px; width: 80%; }
+
+.sk-box {
+    height: 300px;
+    background: #e0e0e0;
+    border-radius: 16px;
+}
