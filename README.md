@@ -1,6 +1,6 @@
 # ScholarGraph:  Hybrid Semantic-Graph Retrieval for Production-Grade Academic Search
 
-[![Live Demo](https://img.shields.io/badge/Live-Demo-blue)](https://web-production-11e7f.up.railway. app/) https://web-production-11e7f.up.railway.app/
+Live Search Engine App: https://web-production-11e7f.up.railway.app/
 
 
 ## 🚀 Overview
