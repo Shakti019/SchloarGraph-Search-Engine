@@ -7,6 +7,10 @@
     --hover-bg: #f8f9fa;
 }
 
+* {
+    box-sizing: border-box;
+}
+
 body {
     font-family: arial, sans-serif;
     margin: 0;
@@ -25,6 +29,7 @@ body {
     position: sticky;
     top: 0;
     z-index: 100;
+    gap: 15px;
 }
 
 .logo {
@@ -32,11 +37,32 @@ body {
     font-weight: bold;
     color: #444;
     text-decoration: none;
-    margin-right: 40px;
+    margin-right: 20px;
+    flex-shrink: 0;
 }
 
 .logo span {
     color: var(--primary-color);
+}
+
+.home-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e8f0fe;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 18px;
+    transition: background 0.2s, transform 0.2s;
+    flex-shrink: 0;
+}
+
+.home-btn:hover {
+    background: #d2e3fc;
+    transform: scale(1.05);
 }
 
 .search-form {
@@ -568,26 +594,122 @@ body {
 
 /* --- Home Page State --- */
 .home-container {
-    height: 80vh;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    background: linear-gradient(180deg, #e8f0fe 0%, #ffffff 60%); /* More visible blue top fade */
+    padding: 20px;
+    width: 100%;
 }
 
 .home-logo {
     font-size: 60px;
     margin-bottom: 30px;
     color: #444;
+    text-align: center;
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.logo-icon {
+    color: var(--primary-color);
+    margin-right: 15px;
 }
 
 .home-logo span {
     color: var(--primary-color);
 }
 
+.home-logo .logo-text {
+    color: #444;
+}
+
+.home-logo .logo-text span {
+    color: var(--primary-color);
+}
+
 .home-search {
     width: 100%;
     max-width: 584px;
+    position: relative;
+}
+
+.home-subtitle {
+    margin-top: 20px;
+    color: #666;
+    font-size: 14px;
+    text-align: center;
+    padding: 0 10px;
+    line-height: 1.5;
+}
+
+/* Mobile Responsiveness for Home */
+@media (max-width: 600px) {
+    .home-container {
+        padding: 15px;
+        overflow-x: hidden;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .home-logo {
+        font-size: 28px !important;
+        margin-bottom: 20px;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px;
+        width: 100% !important;
+        max-width: 100%;
+        text-align: center !important;
+    }
+    
+    .logo-icon {
+        margin-right: 0 !important;
+        font-size: 44px !important;
+        margin-bottom: 5px;
+        display: block !important;
+        text-align: center !important;
+    }
+
+    .logo-text {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100%;
+        word-wrap: break-word;
+        line-height: 1.2;
+        text-align: center !important;
+        font-size: 28px !important;
+    }
+
+    .home-search {
+        width: 100%;
+        padding: 0 5px;
+    }
+
+    .search-input.home-input {
+        font-size: 16px;
+        height: 44px;
+        padding-left: 40px !important;
+        width: 100%;
+    }
+
+    .search-icon-home {
+        left: 15px;
+        font-size: 16px;
+    }
+
+    .home-subtitle {
+        font-size: 11px;
+        margin-top: 15px;
+        padding: 0 5px;
+    }
 }
 
 /* --- Pagination --- */
