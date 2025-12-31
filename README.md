@@ -1,8 +1,7 @@
 # ScholarGraph:  Hybrid Semantic-Graph Retrieval for Production-Grade Academic Search
 
-[![Live Demo](https://img.shields.io/badge/Live-Demo-blue)](https://web-production-11e7f.up.railway. app/)
-[![Python](https://img.shields.io/badge/Python-3.8+-green. svg)](https://www.python.org/)
-[![Qdrant](https://img.shields.io/badge/Vector%20DB-Qdrant-red. svg)](https://qdrant.tech/)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-blue)](https://web-production-11e7f.up.railway. app/) https://web-production-11e7f.up.railway.app/
+
 
 ## 🚀 Overview
 
